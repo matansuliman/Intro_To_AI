@@ -58,7 +58,7 @@ notes:
 
 # Answers to open questions
 ## Answer 1
-- A. The size of the state space is 3^n (each position is either empty, black or white).
+- A. The size of the state space is 3^(n^2) where n=8 (each position is either empty, black or white).
 - B. Examples for valid and inaccessible states:
 <br>
 invalid state:
