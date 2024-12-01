@@ -1,0 +1,414 @@
+##############################  1.A - displayAllActions  ##############################
+
+run: python .\Reversi.py --displayAllActions 7
+
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(1, 3, ['Down'])
+--------
+--XO----
+---OX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(1, 5, ['Down_Left'])
+--------
+--X--O--
+---XO---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(2, 5, ['Down_Left'])
+--------
+--X-----
+---XXO--
+---OO---
+---OX---
+--------
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(3, 5, ['Left'])
+--------
+--X-----
+---XX---
+---OOO--
+---OX---
+--------
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(4, 5, ['Left'])
+--------
+--X-----
+---XX---
+---OX---
+---OOO--
+--------
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+Source state: State 3
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+Target state: State 4, O moved, Action(5, 5, ['Up_Left'])
+--------
+--X-----
+---XX---
+---OX---
+---OO---
+-----O--
+--------
+--------
+
+Result: X: 4, O: 4, Total: 8 disks
+###################################
+
+##############################  1.B - methodical  ##############################
+
+run: python .\Reversi.py --methodical 5
+
+State 0
+--------
+--------
+--------
+---XO---
+---OX---
+--------
+--------
+--------
+
+State 1, X moved, Action(2, 4, ['Down'])
+--------
+--------
+----X---
+---XX---
+---OX---
+--------
+--------
+--------
+
+State 2, O moved, Action(2, 3, ['Down'])
+--------
+--------
+---OX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+State 3, X moved, Action(1, 2, ['Down_Right'])
+--------
+--X-----
+---XX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+State 4, O moved, Action(1, 3, ['Down'])
+--------
+--XO----
+---OX---
+---OX---
+---OX---
+--------
+--------
+--------
+
+State 60
+XXXXXXXO
+XXXXXXXO
+XXXXXXOO
+XOOXOXOO
+XXOXOXOO
+XOXOXOXO
+XXOXOXOO
+XXXXXXXO
+
+Result: X: 42, O: 22, Total: 64 disks
+
+
+##############################  1.C - random  ##############################
+
+first run: python .\Reversi.py --random 5
+
+State 0
+--------
+--------
+--------
+---XO---
+---OX---
+--------
+--------
+--------
+
+State 1, X moved, Action(2, 4, ['Down'])
+--------
+--------
+----X---
+---XX---
+---OX---
+--------
+--------
+--------
+
+State 2, O moved, Action(2, 5, ['Down_Left'])
+--------
+--------
+----XO--
+---XO---
+---OX---
+--------
+--------
+--------
+
+State 3, X moved, Action(2, 6, ['Left'])
+--------
+--------
+----XXX-
+---XO---
+---OX---
+--------
+--------
+--------
+
+State 4, O moved, Action(3, 2, ['Right'])
+--------
+--------
+----XXX-
+--OOO---
+---OX---
+--------
+--------
+--------
+
+State 59
+XXXXOXXX
+XXXXOOOO
+XXOXOOOO
+XXOOOOOO
+XXOOOOOO
+XXOOOOO-
+XXXXOOOX
+OXXOOOOX
+
+Result: X: 28, O: 35, Total: 63 disks
+
+
+second run: python .\Reversi.py --random 5
+
+State 0
+--------
+--------
+--------
+---XO---
+---OX---
+--------
+--------
+--------
+
+State 1, X moved, Action(2, 4, ['Down'])
+--------
+--------
+----X---
+---XX---
+---OX---
+--------
+--------
+--------
+
+State 2, O moved, Action(4, 5, ['Left'])
+--------
+--------
+----X---
+---XX---
+---OOO--
+--------
+--------
+--------
+
+State 3, X moved, Action(5, 5, ['Up_Left'])
+--------
+--------
+----X---
+---XX---
+---OXO--
+-----X--
+--------
+--------
+
+State 4, O moved, Action(2, 5, ['Down_Left'])
+--------
+--------
+----XO--
+---XO---
+---OXO--
+-----X--
+--------
+--------
+
+State 59
+XXXXXOOO
+OOOXOOOO
+OOXOOXXX
+OOOOOXXX
+OOOOXXXX
+OOOOOXXX
+OOOOOXXX
+-XXXXXXX
+
+Result: X: 30, O: 33, Total: 63 disks
+
+##############################  2 - H1 and H2  ##############################
+
+run: python .\Reversi.py H1
+
+State 60
+OOOOOOOO
+OOOOOOOO
+OOXOOOXX
+OXOOOXOX
+OXOOOXOX
+OXXXOOXX
+OXXXXXXX
+XOOOXXOO
+
+Result: X: 24, O: 40, Total: 64 disks
+
+
+run: python .\Reversi.py H2
+
+State 59
+XOOOOOOX
+XOOOOOOX
+XOOOXOOO
+XXXXXXOO
+XXOOXOOO
+XOXXOOOO
+XOXXXOOO
+XXXXOOO-
+
+Result: X: 26, O: 37, Total: 63 disks
+
+
+##############################  3 - head to head  ##############################
+
+run: python .\Reversi.py H1 H2
+
+State 24
+----XXXX
+----XOX-
+--XXOXOO
+--XOX-XO
+--XXX---
+O-X-X---
+-OO-----
+X-O-----
+
+Result: X: 18, O: 10, Total: 28 disks
+
+
+run: python .\Reversi.py H2 H1
+
+State 59
+XXXXXXXX
+OXXXOOOO
+OXOXOOO-
+OXOXOOOO
+OXXOOOOO
+OXOOOOOO
+OXXOOOXO
+XXXOOOXX
+
+Result: X: 26, O: 37, Total: 63 disks
+
+
+##############################  4 - two steps ahead  ##############################
+
+run: python .\Reversi.py H1 --ahead 2
+
+State 60
+XXOOOOOO
+XXOOOOOO
+XXOXOXOO
+XXOOXOOO
+XXOOOXOO
+XXXOOOXO
+XXOXXXXO
+XOXOXXOO
+
+Result: X: 28, O: 36, Total: 64 disks
