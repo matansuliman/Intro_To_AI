@@ -338,63 +338,63 @@ Result: X: 30, O: 33, Total: 63 disks
 run: python .\Reversi.py H1
 
 State 60
+OOOOOOXX
+OOOXOOOX
+OXOOXOXX
+OOXXXXXX
+OXOXXXXX
+OOXXXXXX
 OOOOOOOO
-OOOOOOOO
-OOXOOOXX
-OXOOOXOX
-OXOOOXOX
-OXXXOOXX
-OXXXXXXX
-XOOOXXOO
+XXXXXXXX
 
-Result: X: 24, O: 40, Total: 64 disks
+Result: X: 34, O: 30, Total: 64 disks
 
 
 run: python .\Reversi.py H2
 
-State 59
-XOOOOOOX
-XOOOOOOX
-XOOOXOOO
-XXXXXXOO
-XXOOXOOO
-XOXXOOOO
-XOXXXOOO
-XXXXOOO-
+State 60
+OOOOOOOO
+OOOXXXXX
+OOXOXOXX
+OOOXOOXX
+XXXXXXXX
+XXXXXXOX
+XXXXXXXX
+XXXXXXXX
 
-Result: X: 26, O: 37, Total: 63 disks
+Result: X: 43, O: 21, Total: 64 disks
 
 
 ##############################  3 - head to head  ##############################
 
 run: python .\Reversi.py H1 H2
 
-State 24
-----XXXX
-----XOX-
---XXOXOO
---XOX-XO
---XXX---
-O-X-X---
--OO-----
-X-O-----
+State 37
+XXXXXXXX
+XOXXXXXX
+X-XXXXXX
+---OXOXX
+---OOOXX
+-OOO--XX
+------XX
+-------X
 
-Result: X: 18, O: 10, Total: 28 disks
+Result: X: 32, O: 9, Total: 41 disks
 
 
 run: python .\Reversi.py H2 H1
 
-State 59
-XXXXXXXX
-OXXXOOOO
-OXOXOOO-
-OXOXOOOO
-OXXOOOOO
-OXOOOOOO
-OXXOOOXO
-XXXOOOXX
+State 52
+OOOOOOOO
+OOXOOOOO
+OOOOOOOO
+OOOOXOOO
+OOXXOOOO
+O-XXXOOO
+-----OOO
+--OOOOOO
 
-Result: X: 26, O: 37, Total: 63 disks
+Result: X: 7, O: 49, Total: 56 disks
 
 
 ##############################  4 - two steps ahead  ##############################
@@ -402,13 +402,13 @@ Result: X: 26, O: 37, Total: 63 disks
 run: python .\Reversi.py H1 --ahead 2
 
 State 60
-XXOOOOOO
-XXOOOOOO
-XXOXOXOO
-XXOOXOOO
-XXOOOXOO
-XXXOOOXO
-XXOXXXXO
-XOXOXXOO
+OXXXXXXX
+OXXXXXXX
+OOXOXXXX
+OOOXOXXX
+OOOOXOXX
+XXXXOXOX
+XXXXXOOX
+XOOOOOOX
 
-Result: X: 28, O: 36, Total: 64 disks
+Result: X: 40, O: 24, Total: 64 disks

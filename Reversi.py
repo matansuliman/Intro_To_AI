@@ -146,11 +146,10 @@ class Game():
         params:
             state - the curr state
         return:
-            a numeric value corresponds to a cutoff state and a player
+            a numeric value corresponds to a cutoff state
         """
-        player = self.ToMove(state)
-        w_idx = (player +1) //2 # mapping -1 to 0 and 1 to 1
-        return Eval(self, state, player, self._weights[w_idx])
+        w_idx = (self.ToMove(state) +1) //2 # mapping -1 to 0 and 1 to 1
+        return Eval(self, state, self._weights[w_idx])
 
 # helper function and data structurces
 directions = {
@@ -168,7 +167,6 @@ def Count(state: List[List[int]], player: int):
     """
     params:
         state - the curr state
-        player - the player turn
     return:
         the player piece count
     """
@@ -180,61 +178,55 @@ def Count(state: List[List[int]], player: int):
                 count += 1
     return count
 
-def coinParity(game: Game, state: List[List[int]], player: int):
+def coinParity(game: Game, state: List[List[int]]):
     """
     params:
         game - the game played
         state - the curr state
-        player - the player turn
     return:
-        the player piece count minus the opponent piece count
+        MAX piece count minus MIN piece count
     """
-    countMy = Count(state, player= player)
-    countOp = Count(state, player= -player)
-    coinParity = abs(countMy - countOp) / (countMy + countOp)
-    return coinParity if countMy > countOp else -coinParity
+    countMAX = Count(state, player= 1)
+    countMIN = Count(state, player= -1)
+    return countMAX - countMIN
 
-def mobility(game: Game, state: List[List[int]], player: int):
+def mobility(game: Game, state: List[List[int]]):
     """
     mobility is the number of actions a player can do
     params:
         state - the curr state
-        player - the player turn
     return:
-        the player mobility minus the opponent mobility
+        MAX mobility minus MIN mobility
     """
-    mobilityMy = len(game.Actions(state, player= player))
-    mobilityOp = len(game.Actions(state, player= -player))
-    if (mobilityMy + mobilityOp) == 0: mobility = 0
-    else: mobility = abs(mobilityMy - mobilityOp) / (mobilityMy + mobilityOp)
-    return mobility if mobilityMy > mobilityOp else -mobility
+    mobilityMAX = len(game.Actions(state, player= 1))
+    mobilityMIN = len(game.Actions(state, player= -1))
+    return mobilityMAX - mobilityMIN
 
-def cornerControl(game: Game, state: List[List[int]], player: int):
+def cornerControl(game: Game, state: List[List[int]]):
     """
     params:
         game - the game played
         state - the curr state
-        player - the player turn
     return:
-        the player corner control minus the opponent corner control
+        MAX corner control minus MIN corner control
     """
     n = len(state)
     corners = [(0, 0), (n -1, 0), (0, n -1), (n -1, n -1)]
     res = 0
     for x, y in corners:
-        if state[x][y] == player: res += 1
-        elif state[x][y] == -player: res -= 1
+        if state[x][y] == 1: res += 1
+        elif state[x][y] == -1: res -= 1
         else: pass
     return res
 
-def EdgeControl(game: Game, state: List[List[int]], player: int):
+def EdgeControl(game: Game, state: List[List[int]]):
     """
     params:
         game - the game played
         state - the curr state
         player - the player turn
     return:
-        the player edge control minus the opponent edge control
+        MAX edge control minus MIN edge control
     """
     n = len(state)
     edges = []
@@ -246,12 +238,12 @@ def EdgeControl(game: Game, state: List[List[int]], player: int):
 
     res = 0
     for x, y in edges:
-        if state[x][y] == player: res += 1
-        elif state[x][y] == -player: res -= 1
+        if state[x][y] == 1: res += 1
+        elif state[x][y] == -1: res -= 1
         else: pass
     return res
 
-def Eval(game: Game, state: List[List[int]], player: int, weights: List[int]):
+def Eval(game: Game, state: List[List[int]], weights: List[int]):
     """
     wieghted linear function
     params:
@@ -267,7 +259,7 @@ def Eval(game: Game, state: List[List[int]], player: int, weights: List[int]):
 
     res = 0
     for w, f in zip(normalized_weights, functions):
-        res += w * f(game, state, player)
+        res += w * f(game, state)
     return res 
 
 def printState(state: List[List[int]], action: dict =None, player: int =None, depth: int =0):
@@ -377,23 +369,6 @@ def random(game: Game, n: int):
     """
     simulate(game= game, n= n, search_func= random_search_func)
 
-
-"""def find(game):
-    for i in range(100):
-        h1, h2 = [], []
-        for i in range(4):
-            h1.append(rd.randint(0, 20))
-            h2.append(rd.randint(0, 20))
-
-        temp = game._weights # store prev weights
-
-        # apply weights
-        game._weights = [h1, h2]
-        
-        simulate(game= game)
-
-        game._weights = temp # backtrack"""
-
 def H(game: Game, huristics: List[str]):
     """
     simlulates a game with MiniMax tree search for choosing action, based on huristics for each player
@@ -406,8 +381,8 @@ def H(game: Game, huristics: List[str]):
     """
     #find(game)
     huristics_name_to_weights = {
-        'H1': [19, 15, 7, 6],
-        'H2': [17, 12, 8, 19]
+        'H1': [1, 3, 5, 2],
+        'H2': [1, 1, 1, 1]
     }
     
     temp = game._weights # store prev weights

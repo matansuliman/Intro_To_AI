@@ -1,5 +1,5 @@
 - Name: Matan suliman
-- ID: 
+- ID: 322982620
 - python version: 3.8.0
 - book: 'Artificial Intelligence, a modern approach, 4'th edition'
 ---
@@ -33,11 +33,11 @@ notes:
 
 ## Helper functions to Reversi:
 - Count(state, player): return the player piece count
-- coinParity(game, state, player): returns the player piece count minus the opponent piece count
-- mobility(game, state, player): returns the player mobility minus the opponent mobility
-- cornerControl(game, state, player): returns the player corner control minus the opponent corner control
-- EdgeControl(game, state, player): returns the player edge control minus the opponent edge control
-- Eval(game, state, player, weights): returns a numeric value corresponds to a state and based on a heuristic evaluation function
+- coinParity(game, state): returns the max count minus MIN piece count
+- mobility(game, state): returns MAX mobility minus MIN mobility
+- cornerControl(game, state): returns MAX corner control minus MIN corner control
+- EdgeControl(game, state): returns MAX edge control minus MIN edge control
+- Eval(game, state, weights): returns a numeric value corresponds to a state and based on a heuristic evaluation function
 - printState(state, action, player, depth):  prints state information
 - Display(game, state, action, player, depth): prints a source state, a target state after an action and the result of that action count wise
 
@@ -58,7 +58,7 @@ notes:
 
 # Answers to open questions
 ## Answer 1
-- A. The size of the state space is 3^(n^2) where n=8 (each position is either empty, black or white).
+- A. The size of the state space is 3^n (each position is either empty, black or white).
 - B. Examples for valid and inaccessible states:
 <br>
 invalid state:
@@ -93,8 +93,8 @@ _ _ _ _ _ _ _ _<br>
     - mobility
     - cornerControl
     - edgeControl
-- H1:[19, 15, 7, 6] Prioritizes short-term advantages (coin parity and mobility) at the expense of strategic positioning (corners and edges).
-- H2:[17, 12, 8, 19], Overprioritizes edge control, which can lead to poor decisions like securing unstable edges instead of focusing on corners.
+- H1:[1, 3, 5, 2], prioritizing corner control and mobility over edge control and coin parity for a more strategic evaluation.
+- H2:[1, 1, 1, 1], equal-weight heuristic treating all features—coin parity, mobility, corner control, and edge control as equally important.
 
 ### first state:
 _ _ _ _ _ _ _ _<br>
@@ -106,14 +106,13 @@ _ _ _ _ _ X _ _<br>
 _ _ _ _ _ _ _ _<br>
 _ _ _ _ _ _ _ _<br>
 
-- 'X' moved
-- coinParity = +3
-- mobility = +3
+- coinParity = 5 - 2 = 3
+- mobility = 6 - 3 = 3
 - cornerControl = 0
 - EdgeControl = 0
 #### results
-- H1: 19 *3 + 15 *3 + 7 *0 + 6 *0 = 102
-- H2: 17 *3 + 12 *3 + 8 *0 + 19 *0 = 87
+- H1: 1 *3 + 3 *3 + 5 *0 + 2 *0 = 12
+- H2: 1 *3 + 1 *3 + 1 *0 + 1 *0 = 6
 
 ### second state:
 X X X X OX X X<br>
@@ -125,14 +124,13 @@ X X O O OOO _<br>
 X X X X OOO X<br>
 O X X O OOO X<br>
 
-- 'X' moved
-- coinParity = -7
-- mobility = +1
-- cornerControl = +2
-- EdgeControl = +7
+- coinParity = 28 - 35 = -7
+- mobility = 1 - 0 = 1
+- cornerControl = 3 - 1 = 2
+- EdgeControl = 14 - 9 = 5
 #### results
-- H1: 19 *-7 + 15 *1 + 7 *2 + 6 *7 = -62
-- H2: 17 *-7 + 12 *1 + 8 *2 + 19 *7 = 42
+- H1: 1 *-7 + 3 *1 + 5 *2 + 2 *5 = -7 +3 +10 + 10 = 16
+- H2: 1 *-7 + 1 *1 + 1 *2 + 1 *5 = -7 +1 +2 +5 = 1
 
 
 ### third state:
@@ -145,14 +143,13 @@ _ _ _ _ _ _ _ _<br>
 _ _ _ _ _ _ _ _<br>
 _ _ _ _ _ _ _ _<br>
 
-- 'O' moved
-- coinParity = 0
-- mobility = +2
+- coinParity = 4 - 4 = 0
+- mobility = 3 - 5 = -2
 - cornerControl = 0
 - EdgeControl = 0
 #### results
-- H1: 19 *0 + 15 *2 + 7 *0 + 6 *0 = 30
-- H2: 17 *0 + 12 *2 + 8 *0 + 19 *0 = 24
+- H1: 1 *0 + 3 *-2 + 5 *0 + 2 *0 = -6
+- H2: 1 *0 + 1 *-2 + 1 *0 + 1 *0 = -2
 
 #### sections
 - 2.A: when we reapet the simulation using h1 or h2 we get the same result, its beacuse the same path on the tree of possiable actions.
