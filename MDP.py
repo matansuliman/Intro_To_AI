@@ -1,5 +1,9 @@
 from copy import copy, deepcopy
 from typing import * # clearity of code
+from decimal import Decimal # precision
+
+
+PRECISION = 8
 
 class Action:
     def __init__(self,
@@ -25,7 +29,7 @@ class Action:
         return f"Action: {self._name}, Deltas: {(self._delta_row, self._delta_col)}"
 
 class State:
-    def __init__(self, pos: Tuple[int], status: int =0, reward:int =0, utility: int =0, action: Action =Action(-1, -1, 'None')):
+    def __init__(self, pos: Tuple[int], status: int =0, reward:float =0, utility: float =0, action: Action =Action(-1, -1, 'None')):
         """
         status: 0 = wall, 1 = free, -1 = goal
         """
@@ -59,16 +63,16 @@ class State:
     def setStatus(self, status: int):
         self._status = status
     
-    def getReward(self) -> int:
+    def getReward(self) -> float:
         return self._reward
     
-    def setReward(self, reward: int):
+    def setReward(self, reward: float):
         self._status = reward
     
-    def getUtility(self) -> int:
+    def getUtility(self) -> float:
         return self._utility
     
-    def setUtility(self, utility: int):
+    def setUtility(self, utility: float):
         self._utility = utility
     
     def getActions(self) -> Action:
@@ -76,6 +80,15 @@ class State:
     
     def setActions(self, actions: List[Action]):
         self._action = actions
+
+    def is_free(self) -> bool:
+        return self._status == 1
+
+    def is_wall(self) -> bool:
+        return self._status == 0
+    
+    def is_goal(self) -> bool:
+        return self._status == -1
 
     def __str__(self) -> str:
         return f"Pos: {self._pos}, Status: {self._status}, Reward: {self._reward}, Utility: {self._utility}, {self._action}"
@@ -109,7 +122,7 @@ class Grid:
         else: 
             return None
 
-    def setState(self, pos: Tuple[int], status: int =0, reward:int =0, utility: int =0, action: Action =Action(-1, -1, 'None')):
+    def setState(self, pos: Tuple[int], status: int =0, reward:float =0, utility: float =0, action: Action =Action(-1, -1, 'None')):
         row, col = pos
         self._data[row][col] = State(pos, status, reward, utility, action)
     
@@ -135,7 +148,7 @@ class Grid:
         func = None
         if type == 'status': func = lambda state: state.getStatus()
         elif type == 'reward': func = lambda state: state.getReward()
-        elif type == 'utility': func = lambda state: state.getUtility()
+        elif type == 'utility': func = lambda state: round(state.getUtility(), 4)
         elif type == 'action': func = actions_names
         elif type == 'pos': func = lambda state: state.getPos()
         else: raise ValueError("Invalid value")
@@ -151,7 +164,7 @@ class MDP:
     def __init__(self,
                  grid: Grid,
                  transition_model: Callable,
-                 discount_factor: int
+                 discount_factor: float
                  ):
         self._grid = grid
         self._transition_model = transition_model
@@ -171,13 +184,10 @@ class MDP:
     def getState(self, pos: Tuple[int]) -> State:
         return self._grid.getState(pos)
     
-    def getReward(self, pos: Tuple[int]) -> int:
-        return self._grid.getState(pos).getReward()
-    
-    def TransiotionModel(self, state_curr: Tuple[int], action: Action, state_next: Tuple[int]) -> Callable:
-        return self._transition_model(self, state_curr, action, state_next)
+    def TransiotionModel(self, state_curr: State, action: Action) -> Callable:
+        return self._transition_model(self, state_curr, action)
 
-    def getDiscountFactor(self) -> int:
+    def getDiscountFactor(self) -> float:
         return self._discount_factor
 
     def Actions(self, state: State) -> List[Action]:
@@ -188,7 +198,11 @@ class MDP:
         if state.getStatus() != 1:
             return res
         # check all 4 directions (up, right, down, left)
-        for action_name, action in actions.items():
+        for action in actions.values():
+            # as in the book
+            res.append(action)
+            """
+            # as in the maman
             next_state = nextState(self, state, action)
             if next_state == None:
                 continue
@@ -196,15 +210,23 @@ class MDP:
             bounds = 0 <= next_row < rows and 0 <= next_col < cols
             if bounds and next_state.getStatus() != 0:
                 res.append(action)
-        
+            """
         return res
     
 
 def nextState(mdp: MDP, state: State, action: Action) -> State:
     row, col = state.getPos()
     delta_row, delta_col = action.getDeltaRow(), action.getDeltaCol()
-    new_row, new_col = row + delta_row, col + delta_col
-    return mdp.getState((new_row, new_col))
+    next_row, next_col = row + delta_row, col + delta_col
+    # as in the book
+    next_state = mdp.getState((next_row, next_col))
+    if next_state == None or next_state.is_wall():
+        return state
+    else: return next_state
+    """
+    # as in the maman
+    return mdp.getState((next_row, next_col))
+    """
 
 actions = {
     'Up': Action(
@@ -251,90 +273,115 @@ actions_diagonals = {
     )
 }
 
-def Value_Iteration(mdp: MDP, epsilon: int):
-    rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
-    gamma = mdp.getDiscountFactor()
-
+def Value_Iteration(mdp: MDP, epsilon: float):
+    
     def is_active(state: State) -> bool:
         return state.getStatus() == 1
     
-    def init_U_next():
+    def init_U_next(): 
+        rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
         return [[0 for _ in range(cols)] for _ in range(rows)]
     
-    def update_utilitys(U: List[List[int]]):
+    def update_utilitys(U: List[List[float]]):
         for state in mdp.getStates():
             row, col = state.getPos()
-            state.setUtility(round(U[row][col], 3))
+            state.setUtility(U[row][col])
 
     U_next_value = init_U_next()
-    delta = 0 # error
-    # delta <= epsilon *(1 -gamma) /gamma
-    for i in range(300):
-        print(f'iteration {i}')
-        mdp.getGrid().print('utility')
-        mdp.getGrid().print('action')
-        # for each state (position)
+    delta = pow(10, -PRECISION -1) # error
+    gamma = mdp.getDiscountFactor()
+    i = 0
+    while True:
+        print(f'iteration {i} , delta: {delta}')
+        i += 1
+        update_utilitys(U_next_value)
+        delta = pow(10, -PRECISION -1) # error
+        """print(mdp.getGrid().print('action'))
+        print(mdp.getGrid().print('utility'))"""
+        # loop on states
         for state in mdp.getStates():
             if not is_active(state): continue
-            
+
             # find the action that produces the maximum Q_value
-            # and store it in U_next, U_actions
-            row, col = state.getPos()
             maxx_value = float('-inf')
             maxx_actions = []
             for action in mdp.Actions(state):
-                #print('from', row, col, 'doing', action.getName())
                 q_val = Q_value(mdp, state, action)
                 if q_val > maxx_value:
                     maxx_value = q_val
                     maxx_actions = [action]
                 elif q_val == maxx_value:
                     maxx_actions.append(action)
-            actions_str = ''
-            for action in maxx_actions:
-                actions_str += action.getName() + ', '
-            #print('chosen:', actions_str, maxx_value)
-            #print()
+                else:
+                    pass
+
+            # and store it in U_next, update the actions
+            row, col = state.getPos()
             U_next_value[row][col] = maxx_value
             state.setActions(maxx_actions)
             
-            update_utilitys(U_next_value)
             # update delta to be the largest error
-            error = abs(U_next_value[row][col] - mdp.getState((row, col)).getUtility())
-            delta = max(delta, error)
-        #print(delta, epsilon *(1 -gamma) /gamma)
-        #print('\n\n')
+            error = abs(maxx_value - state.getUtility())
+            delta = round(max(delta, error), PRECISION)
+
+
+        if delta <= epsilon *(1 -gamma) /gamma or i >= 200:
+            break
 
     print(mdp.getGrid().print('action'))
     print(mdp.getGrid().print('utility'))
-    return U_next_value # or U_next ????
+    return U_next_value
 
-def Q_value(mdp: MDP, state: State, action: Action) -> int:
-    gamma = mdp.getDiscountFactor()
+def Q_value(mdp: MDP, state: State, action: Action) -> float:
+    gamma = Decimal(str(mdp.getDiscountFactor()))
+    summ = Decimal(str(0))
+    for inter_probability, inter_state_next in mdp.TransiotionModel(state, action):
+        prob = Decimal(str(inter_probability))
+        reward = Decimal(str(inter_state_next.getReward()))
+        utility = Decimal(str(inter_state_next.getUtility()))
+        intermediate = prob * (reward + gamma * utility)
+        print(f'    += {prob} * ({reward} + {gamma} * {utility})')# = {prob} * ({reward} + {gamma * utility}) = {prob} * {reward + gamma * utility} = {intermediate}')
+        print(f'    += {intermediate}')
+        summ += intermediate  # Accumulate the sum
+    print(f'from {state.getPos()} doing {action.getName()} got {summ}')
+    return summ  # Return as float
 
-    summ = 0
-    for action, probability in mdp.TransiotionModel(state, action, None):
-        state_next = nextState(mdp, state, action)
-        reward_next = state_next.getReward()
-        utility_next = state_next.getUtility()
-        #print(f'        {action.getName()}, {probability} * ({reward_next} + {gamma} * {utility_next}) = {probability * (reward_next + gamma * utility_next)}')
-        summ += probability * (reward_next + gamma * utility_next)
-    
-    #print(f'    sum = {round(summ, 10)}')
-    return round(summ, 10)
-
-def transition_model(mdp: MDP, state_curr: State, action: Action, state_next: State) -> List[[Action, int]]:
+def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tuple[float, State]]:
 
     actions_valid = [action]
     probabilities = [0.8, 0.1, 0.1]
+    states_next = [nextState(mdp, state_curr, action)]
 
     action_name = action.getName()
+    actions_potensial_str = []
+    if action_name in ['Up', 'Down']:
+        actions_potensial_str = [f'Right', f'Left']
+    elif action_name in ['Right', 'Left']:
+        actions_potensial_str = [f'Up', f'Down']
+    else: 
+        pass
+
+    for action_potensial_str in actions_potensial_str:
+        state_next = nextState(mdp, state_curr, actions[action_potensial_str])
+        # as in the book
+        states_next.append(state_next)
+        """
+        # as in the maman
+        if state_next != None and not state_next.is_wall():
+            actions_valid.append(actions[action_potensial_str])
+            states_next.append(state_next)
+        else:
+            probabilities[0] += probabilities.pop()
+            """
+
+    """
     actions_potensial_diag = []
     if action_name in ['Up', 'Down']:
         actions_potensial_diag = [f'{action_name}-Right', f'{action_name}-Left']
     elif action_name in ['Right', 'Left']:
         actions_potensial_diag = [f'Up-{action_name}', f'Down-{action_name}']
-    else: raise ValueError("Invalid action") 
+    else: 
+        pass
     
     for action_potensial_diag in actions_potensial_diag:
         state_next = nextState(mdp, state_curr, actions_diagonals[action_potensial_diag])
@@ -342,10 +389,11 @@ def transition_model(mdp: MDP, state_curr: State, action: Action, state_next: St
             actions_valid.append(actions_diagonals[action_potensial_diag])
         else:
             probabilities[0] += probabilities.pop()
+    """
             
-    return zip(actions_valid, probabilities)
+    return zip(probabilities, states_next)
 
-
+from fractions import Fraction
 ## Driver code ##
 
 def main():
@@ -369,7 +417,7 @@ def main():
                 states.setState((row, col), status= states_status[row][col], reward= states_rewards[row][col])
         return states
 
-    discount_factor = 0.9
+    discount_factor = 1
     mdp = MDP(
         grid= init_grid(),
         transition_model= transition_model,
@@ -383,8 +431,10 @@ def main():
     #print(mdp.Actions(0, 1))
     #print(list(mdp.TransiotionModel(states.getState((0, 1)), actions['Left'], None)))
     #print(Q_value(mdp, states.getState((0, 1)), actions['Left'],))
-    res = Value_Iteration(mdp, 1)
+    res = Value_Iteration(mdp, epsilon= 0.001)
     #print(res)
+    Q_value(mdp, mdp.getState((2, 2)), actions['Left'])
+    Q_value(mdp, mdp.getState((2, 2)), actions['Up'])
 
 if __name__ == '__main__':
     main()
