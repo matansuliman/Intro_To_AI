@@ -51,6 +51,8 @@ class State:
         self._reward = reward
         self._utility = utility
         self._actions = actions
+        if status != 1: # not free
+            self._actions = []
     
     ## get set ##
     def getPos(self) -> Tuple[int]:
@@ -118,7 +120,7 @@ class State:
         return self._status == -9
 
     def __str__(self) -> str:
-        return f"Pos: {self._pos}, Status: {self._status}, Reward: {self._reward}, Utility: {self._utility}, {self.printActions()}"
+        return f"Pos: {self._pos}, Status: {self._status}, Reward: {self._reward}, Utility: {self._utility}, {self.printActions('n')}"
 
 class Grid:
     def __init__(self, rows: int, cols: int):
@@ -171,7 +173,7 @@ class Grid:
         if type == 's': func = lambda state: state.getStatus()
         elif type == 'r': func = lambda state: state.getReward()
         elif type == 'u': func = lambda state: round(state.getUtility(), 4)
-        elif type == 'a': func = lambda state: state.getActions()
+        elif type == 'a': func = lambda state: state.printActions('s')
         elif type == 'p': func = lambda state: state.getPos()
         else: raise ValueError("Invalid value")
 
@@ -179,14 +181,17 @@ class Grid:
         df = pd.DataFrame(mat)
         return f'\n{type} grid:\n{df}\n'
 
-    def mats_to_grid(mat_status: List[List[int]], mat_reward: List[List[int]]):
+    def mats_to_grid(mat_status: List[List[int]], mat_reward: List[List[int]], action_defalut_str: str =None):
         rows, cols = len(mat_status), len(mat_status[0])
         grid = Grid(rows, cols)
         for row in range(rows):
             for col in range(cols):
-                grid.setState((row, col), status= mat_status[row][col], reward= mat_reward[row][col])
-        return grid
+                if action_defalut_str == None:
+                    grid.setState((row, col), status= mat_status[row][col], reward= mat_reward[row][col])
+                else:
+                    grid.setState((row, col), status= mat_status[row][col], reward= mat_reward[row][col], actions= [actions[action_defalut_str]])
 
+        return grid
 
 class MDP:
     def __init__(self,
@@ -268,6 +273,13 @@ class MDP:
     def init_utilities(self):
         rows, cols = self.getGrid().getRows(), self.getGrid().getCols()
         self.update_utilitys(_zeros(rows, cols))
+
+    def update_actions(self, actions: List[Action]):
+        for state in self.getStates():
+            state.setActions(actions)
+
+    def init_actions(self):
+        self.update_actions([])
     
     ## helper functions ##
     def _nextState(self, state: State, action: Action) -> State:
@@ -283,6 +295,16 @@ class MDP:
         """
 
 actions = {
+    'Left': Action(
+        delta_row= 0,
+        delta_col= -1,
+        name= 'Left'
+    ),
+    'Down': Action(
+        delta_row= +1,
+        delta_col= 0,
+        name= 'Down'
+    ),
     'Up': Action(
         delta_row= -1,
         delta_col= 0,
@@ -292,16 +314,6 @@ actions = {
         delta_row= 0,
         delta_col= +1,
         name= 'Right'
-    ),
-    'Down': Action(
-        delta_row= +1,
-        delta_col= 0,
-        name= 'Down'
-    ),
-    'Left': Action(
-        delta_row= 0,
-        delta_col= -1,
-        name= 'Left'
     )
 }
 actions_diagonals = {
@@ -327,7 +339,7 @@ actions_diagonals = {
     )
 }
 
-def Value_Iteration(mdp: MDP, EPSILON: float) -> List[List[int]]:
+def Value_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200) -> int:
     
     PRECISION = int(np.log10(EPSILON) -1)
     gamma = mdp.getDiscountFactor()
@@ -367,20 +379,119 @@ def Value_Iteration(mdp: MDP, EPSILON: float) -> List[List[int]]:
             error = abs(maxx_value - state.getUtility())
             delta = max(delta, error)
         
-        if delta <= threshold or i >= 200: break
+        if delta <= threshold or i >= max_iteration: break
     
     return i
 
-def Q_value(mdp: MDP, state: State, action: Action) -> float:  
+def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variation: int =1) -> int:
+    
+    rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
+    U_next_value = _zeros(rows, cols)
+
+    
+
+    def policy_eval(toprint: bool):
+
+        PRECISION = int(np.log10(EPSILON) -1)
+        rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
+        U_next_value = _zeros(rows, cols)
+        threshold = EPSILON
+
+        # do while
+        j = 0
+
+        while True:
+            j += 1
+            mdp.update_utilitys(U_next_value)
+            delta = pow(10, PRECISION)
+            print(mdp.getGrid().print('u'))
+
+            # loop on states
+            for state in mdp.getStates():
+                if not state.is_free(): continue
+
+                # calculate the q value for the current action
+                action = state.getActions()[0]
+                q_val = Q_value(mdp, state, action)
+                print(f'    {state.getPos()}: qva: {q_val}', end= ' ')
+
+                # and store it in U_next
+                row, col = state.getPos()
+                U_next_value[row][col] = q_val
+                
+                # update delta to be the largest error
+                error = abs(q_val - state.getUtility())
+                if toprint:
+                    print(f'    error: {round(error, 4)}')
+                delta = max(delta, error)
+            if toprint:
+                print('\n', j, delta, threshold, '\n')
+            print()
+            if delta <= threshold or j >= max_iteration: break
+        
+        
+        return j
+
+    def policy_improvement():
+
+        unchanged = True
+        # loop on states
+        for state in mdp.getStates():
+            if not state.is_free(): continue
+
+            # find the action that produces the maximum Q_value
+            maxx_value = float('-inf')
+            maxx_actions = []
+            for action in mdp.Actions(state):
+                q_val = Q_value(mdp, state, action)
+                if q_val > maxx_value:
+                    maxx_value = q_val
+                    maxx_actions = [action]
+                elif q_val == maxx_value:
+                    maxx_actions.append(action)
+
+            # and store it in U_next, update the actions
+            if round(maxx_value, 10) > round(state.getUtility(), 10):
+                row, col = state.getPos()
+                U_next_value[row][col] = maxx_value
+                state.setActions(maxx_actions)
+                unchanged = False
+        
+        return unchanged
+
+    # do while
+    x = []
+    y = []
+    i = 0
+
+    while True:
+        i += 1
+
+        toprint = True if i == 1 else False
+        j = policy_eval(toprint)
+        unchanged = policy_improvement()
+
+        x.append(i)
+        y.append(j)
+
+        if unchanged or i >= max_iteration: break
+
+    print(x, y)
+    return i, x, y
+
+def Q_value(mdp: MDP, state: State, action: Action) -> float:
+
     getcontext().prec = 50
     gamma = _precision(mdp.getDiscountFactor())
     summ = _precision(0)
     for inter_probability, inter_state_next in mdp.TransiotionModel(state, action):
         prob, reward, utility = _precision(inter_probability), _precision(inter_state_next.getReward()), _precision(inter_state_next.getUtility())
         summ += prob * (reward + gamma * utility)
+    
     return summ
 
-def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tuple[float, State]]:   
+def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tuple[float, State]]:
+
     p, q = mdp.getP(), round((1 -mdp.getP()) /2, 1)
     probabilities_next = [p, q, q]
     states_next = [mdp._nextState(state_curr, action)]
@@ -398,7 +509,7 @@ def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tu
             states_next.append(state_next)
         else:
             probabilities_next[0] += probabilities_next.pop()
-    
+
     return zip(probabilities_next, states_next)
     """
     # as in the book
@@ -466,11 +577,26 @@ def plt_save(mdp: MDP, i: int, Q: int):
 
     # Save the combined figure
     val = {
-        1: 'Combined',
-        2: f'gamma{mdp.getDiscountFactor()}',
-        3: f'p{mdp.getP()}'
+        '2.1': 'ValueIteration_Combined',
+        '2.2': f'ValueIteration_gamma{mdp.getDiscountFactor()}',
+        '2.3': f'ValueIteration_p{mdp.getP()}',
+        '3.1': f'PolicyIteration_Combined'
     }
-    file_name = f'input_ValueIteration_{val[Q]}_MatanSuliman.jpg'
+    file_name = f'input_{val[Q]}_MatanSuliman.jpg'
+    plt.tight_layout()  # Adjust layout to avoid overlap
+    plt.savefig(file_name, dpi=300)
+    plt.close()
+
+def graph_save(mdp: MDP, x: List[int], y: List[int], Q: int):
+
+    plt.scatter(x, y)
+    plt.xticks(x)  # Add x-tick labels
+
+    # Save the combined figure
+    val = {
+        '3.2.1': f'Graph_variation1'
+    }
+    file_name = f'input_PolicyIteration_{val[Q]}_MatanSuliman.jpg'
     plt.tight_layout()  # Adjust layout to avoid overlap
     plt.savefig(file_name, dpi=300)
     plt.close()
@@ -480,6 +606,9 @@ def init_mdp(status_mat: List[List[int]], rewards_mat: List[List[float]], transi
     return 
 
 def create_npz(name: str, r: int):
+    """
+    status: 0 = wall, 1 = free, -1 = goal, -9 = invalid
+    """
     rewards = [
         [r, r, r, 1],
         [r, 0, r, -1],
@@ -487,7 +616,7 @@ def create_npz(name: str, r: int):
     ]
     status = [
         [1, 1, 1, -1],
-        [1, 1, 1, -1],
+        [1, 0, 1, -1],
         [1, 1, 1, 1]
     ]
     np.savez(f'{name}.npz', status, rewards)
@@ -506,41 +635,59 @@ def main():
     npz_file_path, iteration_type = handle_input()
     status_mat, reward_mat = load_data_from_npz(npz_file_path)
 
-    EPSILON = pow(10, -20)
     GAMMA = 0.9
-    mdp = MDP(
-        grid= Grid.mats_to_grid(status_mat, reward_mat),
-        transition_model= transition_model,
-        discount_factor= GAMMA,
-        p= 0.8
-    )
-
+    P = 0.8
+    EPSILON = pow(10, -15)
     if iteration_type == 'ValueIteration':
-
-        i = Value_Iteration(mdp, EPSILON)
-        plt_save(mdp, i, Q= 1)
         
-        print('done Q1')
+        mdp = MDP(
+            grid= Grid.mats_to_grid(status_mat, reward_mat),
+            transition_model= transition_model,
+            discount_factor= GAMMA,
+            p= P
+        )
+        
+        i = Value_Iteration(mdp, EPSILON)
+        plt_save(mdp, i, Q= '2.1')
+        print('done Q2.1')
 
         for gamma_loop in np.linspace(0, 1, 5):
             mdp.init_utilities()
             mdp.setDiscountFactor(gamma_loop)
             i = Value_Iteration(mdp, EPSILON)
-            plt_save(mdp, i, Q= 2)
-        
-        print('done Q2')
+            plt_save(mdp, i, Q= '2.2')
+        print('done Q2.2')
 
         mdp.setDiscountFactor(GAMMA)
         for p_loop in np.linspace(0.4, 1, 4):
             mdp.init_utilities()
             mdp.setP(p_loop)
             i = Value_Iteration(mdp, EPSILON)
-            plt_save(mdp, i, Q= 3)
-        
-        print('done Q3')
+            plt_save(mdp, i, Q= '2.3')
+        print('done Q2.3')
     
     elif iteration_type == 'PolicyIteration':
-        print('p i')
+
+        mdp = MDP(
+            grid= Grid.mats_to_grid(status_mat, reward_mat, action_defalut_str='Up'),
+            transition_model= transition_model,
+            discount_factor= GAMMA,
+            p= P
+        )
+        
+        i, x, y = Policy_Iteration(mdp, EPSILON, variation=1)
+        plt_save(mdp, i, Q= '3.1')
+        graph_save(mdp, x, y, Q= '3.2.1')
+        print('done Q3.2.1')
+
+        """mdp.init_utilities()
+        mdp.update_actions([actions['Up']])
+
+        i, x, y = Policy_Iteration(mdp, EPSILON, variation=1)
+        plt_save(mdp, i, Q= '3.1')
+        graph_save(mdp, x, y, Q= '3.2.1')
+        print('done Q3.2.1')"""
+
     else:
         raise ValueError('<ValueIteration / PolicyIteration>')
 
