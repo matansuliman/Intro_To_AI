@@ -181,7 +181,7 @@ class Grid:
         df = pd.DataFrame(mat)
         return f'\n{type} grid:\n{df}\n'
 
-    def mats_to_grid(mat_status: List[List[int]], mat_reward: List[List[int]], action_defalut_str: str =None):
+    def mats_to_grid(mat_status: List[List[int]], mat_reward: List[List[int]], action_defalut_str: str =None) -> 'Grid':
         rows, cols = len(mat_status), len(mat_status[0])
         grid = Grid(rows, cols)
         for row in range(rows):
@@ -385,16 +385,15 @@ def Value_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200) -> int:
 
 def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variation: int =1) -> int:
     
-    rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
-    U_next_value = _zeros(rows, cols)
+    PRECISION = int(np.log10(EPSILON) -1)
 
-    
+    def policy_eval():
 
-    def policy_eval(toprint: bool):
-
-        PRECISION = int(np.log10(EPSILON) -1)
-        rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
-        U_next_value = _zeros(rows, cols)
+        if variation == 1:
+            rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
+            U_next_value = _zeros(rows, cols)
+        else: # variation == 2:
+            U_next_value = [[cell.getUtility() for cell in row] for row in mdp.getGrid().getData()]
         threshold = EPSILON
 
         # do while
@@ -404,7 +403,6 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
             j += 1
             mdp.update_utilitys(U_next_value)
             delta = pow(10, PRECISION)
-            print(mdp.getGrid().print('u'))
 
             # loop on states
             for state in mdp.getStates():
@@ -413,7 +411,6 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
                 # calculate the q value for the current action
                 action = state.getActions()[0]
                 q_val = Q_value(mdp, state, action)
-                print(f'    {state.getPos()}: qva: {q_val}', end= ' ')
 
                 # and store it in U_next
                 row, col = state.getPos()
@@ -421,14 +418,9 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
                 
                 # update delta to be the largest error
                 error = abs(q_val - state.getUtility())
-                if toprint:
-                    print(f'    error: {round(error, 4)}')
                 delta = max(delta, error)
-            if toprint:
-                print('\n', j, delta, threshold, '\n')
-            print()
+            
             if delta <= threshold or j >= max_iteration: break
-        
         
         return j
 
@@ -451,9 +443,7 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
                     maxx_actions.append(action)
 
             # and store it in U_next, update the actions
-            if round(maxx_value, 10) > round(state.getUtility(), 10):
-                row, col = state.getPos()
-                U_next_value[row][col] = maxx_value
+            if round(maxx_value, PRECISION) > round(state.getUtility(), PRECISION):
                 state.setActions(maxx_actions)
                 unchanged = False
         
@@ -462,21 +452,17 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
     # do while
     x = []
     y = []
-    i = 0
+    i = 1
 
     while True:
-        i += 1
-
-        toprint = True if i == 1 else False
-        j = policy_eval(toprint)
-        unchanged = policy_improvement()
 
         x.append(i)
-        y.append(j)
+        y.append(policy_eval())
+        unchanged = policy_improvement()
 
+        i += 1
         if unchanged or i >= max_iteration: break
 
-    print(x, y)
     return i, x, y
 
 def Q_value(mdp: MDP, state: State, action: Action) -> float:
@@ -580,7 +566,10 @@ def plt_save(mdp: MDP, i: int, Q: int):
         '2.1': 'ValueIteration_Combined',
         '2.2': f'ValueIteration_gamma{mdp.getDiscountFactor()}',
         '2.3': f'ValueIteration_p{mdp.getP()}',
-        '3.1': f'PolicyIteration_Combined'
+        '3.1': f'PolicyIteration_Combined',
+        '3.2.1': f'PolicyIteration_variation1',
+        '3.2.2': f'PolicyIteration_variation2',
+
     }
     file_name = f'input_{val[Q]}_MatanSuliman.jpg'
     plt.tight_layout()  # Adjust layout to avoid overlap
@@ -590,21 +579,19 @@ def plt_save(mdp: MDP, i: int, Q: int):
 def graph_save(mdp: MDP, x: List[int], y: List[int], Q: int):
 
     plt.scatter(x, y)
+    plt.plot(x, y)
     plt.xticks(x)  # Add x-tick labels
 
     # Save the combined figure
     val = {
-        '3.2.1': f'Graph_variation1'
+        '3.2.1': f'Graph_variation1',
+        '3.2.2': f'Graph_variation2'
     }
     file_name = f'input_PolicyIteration_{val[Q]}_MatanSuliman.jpg'
     plt.tight_layout()  # Adjust layout to avoid overlap
     plt.savefig(file_name, dpi=300)
     plt.close()
-
-def init_mdp(status_mat: List[List[int]], rewards_mat: List[List[float]], transition_model: Callable, discount_factor: float, p: float):
-    
-    return 
-
+ 
 def create_npz(name: str, r: int):
     """
     status: 0 = wall, 1 = free, -1 = goal, -9 = invalid
@@ -635,16 +622,14 @@ def main():
     npz_file_path, iteration_type = handle_input()
     status_mat, reward_mat = load_data_from_npz(npz_file_path)
 
-    GAMMA = 0.9
-    P = 0.8
     EPSILON = pow(10, -15)
     if iteration_type == 'ValueIteration':
         
         mdp = MDP(
             grid= Grid.mats_to_grid(status_mat, reward_mat),
             transition_model= transition_model,
-            discount_factor= GAMMA,
-            p= P
+            discount_factor= 0.9,
+            p= 0.8
         )
         
         i = Value_Iteration(mdp, EPSILON)
@@ -658,7 +643,7 @@ def main():
             plt_save(mdp, i, Q= '2.2')
         print('done Q2.2')
 
-        mdp.setDiscountFactor(GAMMA)
+        mdp.setDiscountFactor(0.9)
         for p_loop in np.linspace(0.4, 1, 4):
             mdp.init_utilities()
             mdp.setP(p_loop)
@@ -671,27 +656,29 @@ def main():
         mdp = MDP(
             grid= Grid.mats_to_grid(status_mat, reward_mat, action_defalut_str='Up'),
             transition_model= transition_model,
-            discount_factor= GAMMA,
-            p= P
+            discount_factor= 0.9,
+            p= 0.8
         )
         
-        i, x, y = Policy_Iteration(mdp, EPSILON, variation=1)
+        i, x, y = Policy_Iteration(mdp, EPSILON, variation= 1)
         plt_save(mdp, i, Q= '3.1')
+        print('done Q3.1')
+
         graph_save(mdp, x, y, Q= '3.2.1')
         print('done Q3.2.1')
 
-        """mdp.init_utilities()
+        mdp.init_utilities()
         mdp.update_actions([actions['Up']])
 
-        i, x, y = Policy_Iteration(mdp, EPSILON, variation=1)
-        plt_save(mdp, i, Q= '3.1')
-        graph_save(mdp, x, y, Q= '3.2.1')
-        print('done Q3.2.1')"""
+        i, x, y = Policy_Iteration(mdp, EPSILON, variation= 2)
+        graph_save(mdp, x, y, Q= '3.2.2')
+        print('done Q3.2.2')
 
     else:
         raise ValueError('<ValueIteration / PolicyIteration>')
 
 if __name__ == '__main__':
     for r in [-0.04, -0.01]:
+        #r *= 10
         create_npz(f'test{r}', r)
     main()
