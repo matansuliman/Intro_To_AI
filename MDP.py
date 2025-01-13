@@ -1,8 +1,3 @@
-"""
-Name: Matan suliman
-"""
-
-
 from copy import copy, deepcopy
 from typing import * # clearity of code
 from decimal import Decimal, getcontext # precision
@@ -264,10 +259,6 @@ class MDP:
             next_state = self._nextState(state, action)
             if next_state.is_free() or next_state.is_goal():
                 res.append(action)
-            """
-            # as in the book
-            res.append(action)
-            """
         return res
 
     def update_utilitys(self, U: List[List[float]]):
@@ -292,12 +283,6 @@ class MDP:
         delta_row, delta_col = action.getDeltaRow(), action.getDeltaCol()
         next_row, next_col = row + delta_row, col + delta_col
         return self.getState((next_row, next_col))
-        """
-        # as in the book
-        if next_state == None or next_state.is_wall():
-            return state
-        else: return next_state
-        """
 
 actions = {
     'Left': Action(
@@ -501,22 +486,7 @@ def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tu
         else:
             probabilities_next[0] += probabilities_next.pop()
 
-    return zip(probabilities_next, states_next)
-    """
-    # as in the book
-    action_map = {
-        'Up': ['Right', 'Left'],
-        'Down': ['Right', 'Left'],
-        'Right': ['Up', 'Down'],
-        'Left': ['Up', 'Down']
-    }
-    actions_potential_str = action_map.get(action.getName(), [])
-
-    for action_potential_str in actions_potential_str:
-        state_next = mdp._nextState(state_curr, actions[action_potential_str])
-        # as in the book
-        states_next.append(state_next)
-    """            
+    return zip(probabilities_next, states_next)            
 
 ## Helper Functions ##
 def _precision(number: int) -> Decimal:
@@ -524,154 +494,3 @@ def _precision(number: int) -> Decimal:
 
 def _zeros(rows: int, cols: int) -> List[List[int]]:
     return [[0 for _ in range(cols)] for _ in range(rows)]
-
-## Driver code ##
-
-def plt_save(mdp: MDP, i: int, Q: int):
-
-    rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
-    utilities_mat = [[mdp.getState((row, col)).getUtility() for col in range(cols)] for row in range(rows)]
-    action_mat = [[mdp.getState((row, col)).printActions('s') for col in range(cols)] for row in range(rows)]
-
-    for state in mdp.getStates():
-        row, col = state.getPos()
-        if state.is_goal(): action_mat[row][col] = 'O'
-        if state.is_wall(): action_mat[row][col] = 'X'
-
-    # Define the figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
-    fig.suptitle(f'Name:  Matan Suliman\n\nIterations Until Convergens:  {i}')
-
-    # Plot the utilities matrix
-    Z = np.array(utilities_mat, dtype=float)
-    im = ax1.imshow(Z, cmap='seismic')
-    ax1.set_xticks(np.arange(cols))  # Add x-tick labels
-    ax1.set_yticks(np.arange(rows))  # Add y-tick labels
-    ax1.set_yticklabels(np.arange(rows)[::-1])  # Flip y-tick labels
-    ax1.set_xticklabels(np.arange(cols))
-    fig.colorbar(im, ax=ax1, shrink=0.8) # Add colorbar to the utilities plot
-
-    # Annotate the cells in the utilities matrix
-    for row in range(rows):
-        for col in range(cols):
-            value = utilities_mat[row][col]
-            background_color = im.cmap(im.norm(Z[row, col]))  # Get the background color
-            # Calculate luminance (perceived brightness) of the background
-            r, g, b, _ = background_color  # RGBA values
-            luminance = 0.299 * r + 0.587 * g + 0.114 * b  # Standard luminance formula
-            text_color = "white" if luminance < 0.5 else "black"  # White text on dark background
-
-            ax1.text(col, row, f"{value:.4f}", ha="center", va="center", color=text_color, fontsize=5)
-
-    # Plot the action policy table
-    ax2.set_axis_off()
-    table = ax2.table(cellText=action_mat, cellLoc='center', loc='center')  # Create the table
-    table.scale(1, 2)  # Adjust cell size for better readability
-
-    # Save the combined figure
-    val = {
-        '2.1': 'ValueIteration_Combined',
-        '2.2': f'ValueIteration_gamma{mdp.getDiscountFactor()}',
-        '2.3': f'ValueIteration_p{mdp.getP()}',
-        '3.1': f'PolicyIteration_Combined',
-        '3.2.1': f'PolicyIteration_variation1',
-        '3.2.2': f'PolicyIteration_variation2',
-
-    }
-
-    plt.tight_layout()  # Adjust layout to avoid overlap
-    plt.savefig(f'Results\\input_{val[Q]}_MatanSuliman.jpg', dpi= 300)
-    plt.close()
-
-def graph_save(mdp: MDP, x: List[int], y: List[int], Q: int):
-
-    plt.scatter(x, y)
-    plt.plot(x, y)
-    plt.xticks(x)  # Add x-tick labels
-
-    for i, val in enumerate(y):
-        plt.text(x[i] + 0.1, y[i], f'{val}', fontsize=9, color='red')
-
-    # Save the combined figure
-    val = {
-        '3.2.1': f'Graph_variation1',
-        '3.2.2': f'Graph_variation2'
-    }
-    file_name = f'Results\\input_PolicyIteration_{val[Q]}_MatanSuliman.jpg'
-    plt.tight_layout()  # Adjust layout to avoid overlap
-    plt.savefig(file_name, dpi=300)
-    plt.close()
-
-def handle_input():
-    if len(sys.argv) != 3:
-        raise "Usage: python MDP.py <path_to_npz_file> <ValueIteration / PolicyIteration>"
-    else:
-        return sys.argv[1], sys.argv[2]
-
-def load_data_from_npz(npz_file_path: str):
-    data = np.load(npz_file_path)
-    return data['states'].tolist(), data['rewards'].tolist()
-
-def main():
-    npz_file_path, iteration_type = handle_input()
-    status_mat, reward_mat = load_data_from_npz(npz_file_path)
-
-    getcontext().prec = 50
-    EPSILON = pow(10, -6)
-
-    if iteration_type == 'ValueIteration':
-        
-        mdp = MDP(
-            grid= Grid.mats_to_grid(status_mat, reward_mat),
-            transition_model= transition_model,
-            discount_factor= 0.9,
-            p= 0.8
-        )
-        
-        i = Value_Iteration(mdp, EPSILON)
-        plt_save(mdp, i, Q= '2.1')
-        print('done Q2.1')
-        
-        for gamma_loop in np.linspace(0, 1, 5):
-            mdp.init_utilities()
-            mdp.setDiscountFactor(gamma_loop)
-            i = Value_Iteration(mdp, EPSILON)
-            plt_save(mdp, i, Q= '2.2')
-        print('done Q2.2')
-
-        mdp.setDiscountFactor(0.9)
-        for p_loop in np.linspace(0.4, 1, 4):
-            mdp.init_utilities()
-            mdp.setP(p_loop)
-            i = Value_Iteration(mdp, EPSILON)
-            plt_save(mdp, i, Q= '2.3')
-        print('done Q2.3')
-    
-    elif iteration_type == 'PolicyIteration':
-
-        mdp = MDP(
-            grid= Grid.mats_to_grid(status_mat, reward_mat, action_defalut_str='Up'),
-            transition_model= transition_model,
-            discount_factor= 0.9,
-            p= 0.8
-        )
-
-        i, x, y = Policy_Iteration(mdp, EPSILON, variation= 1)
-        plt_save(mdp, i, Q= '3.1')
-        print('done Q3.1')
-        
-        graph_save(mdp, x, y, Q= '3.2.1')
-        print('done Q3.2.1')
-        
-        mdp.init_utilities()
-        mdp.update_actions([actions['Up']])
-
-        i, x, y = Policy_Iteration(mdp, EPSILON, variation= 2)
-        graph_save(mdp, x, y, Q= '3.2.2')
-        print('done Q3.2.2')
-        
-    else:
-        raise ValueError('<ValueIteration / PolicyIteration>')
-
-if __name__ == '__main__':
-    main()
