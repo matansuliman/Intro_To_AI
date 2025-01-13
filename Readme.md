@@ -39,6 +39,8 @@ Represents an action taken by the agent. An action consists of a row and column 
 - `getDeltaRow()`: Returns the change in the row index for the action.
 - `getDeltaCol()`: Returns the change in the column index for the action.
 - `getName()`: Returns the name of the action.
+
+#### Other Methods
 - `getSymbol()`: Returns a symbol representing the action (e.g., `^`, `v`, `<`, `>`, etc.).
 - `__str__()`: Returns a string representation of the action.
 
@@ -57,9 +59,14 @@ Represents a state in the MDP grid.
 - `setUtility()`: Sets the utility of the state.
 - `getActions()`: Returns the list of actions available from this state.
 - `setActions()`: Sets the list of actions available from this state.
+
+#### Other Methods
+- `printActions()`: prints the actions from this state.
 - `is_free()`: Checks if the state is free.
 - `is_wall()`: Checks if the state is a wall.
 - `is_goal()`: Checks if the state is a goal.
+- `is_invalid()`: Checks if the state is invalid.
+- `__str__()`: prints the state.
 
 ### Grid
 
@@ -69,9 +76,16 @@ Represents the grid of states.
 - `getRows()`: Returns the number of rows in the grid.
 - `getCols()`: Returns the number of columns in the grid.
 - `getData()`: Returns the grid data as a 2D list.
-- `setState()`: Sets a state at a specific position.
+- `setData()`: Sets the grid data.
 - `getState()`: Gets a state at a specific position.
+- `setState()`: Sets a state at a specific position.
 - `print()`: Prints the grid's information based on the specified type (status, reward, utility, etc.).
+
+#### Other methods:
+- `__str__()`: Returns a string representation.
+- `getCopy()`: Returns a deepcopy of the grid.
+- `print()`: returns a string representing a matrix of the states, instead of the states print the utilities, actions, status, reward, position.
+- `mats_to_grid()`: returns a grid from status and rewards matricies.
 
 ### MDP
 
@@ -80,13 +94,25 @@ The main class representing the Markov Decision Process (MDP).
 #### Methods:
 - `getGrid()`: Returns the grid object.
 - `setGrid()`: Sets the grid.
+- `getTransiotionModel()`: Gets the transition model function.
+- `setTransiotionModel()`: Sets the transition model function.
+- `getDiscountFactor()`: Returns the discount factor.
+- `setDiscountFactor()`: Sets the discount factor.
+- `getP()`: Returns the probability of the move.
+- `setP()`: Set the probability of the move.
+
+#### Other methods:
 - `getStates()`: Returns all states in the grid.
+- `getState()`: Return a state given a pos.
+- `TransiotionModel()`: call the transition model function.
 - `Actions()`: Returns the list of available actions for a given state.
 - `update_utilitys()`: Updates the utilities of all states.
 - `update_actions()`: Updates the actions of all states.
 - `init_utilities()`: Initializes the utilities of all states.
 - `init_actions()`: Initializes the actions of all states.
-- `Q_value()`: Calculates the Q-value for a given state and action.
+
+#### helper functions
+- `_next_state()`: Returns the next state given a source state and an action.
 
 ## Key Functions
 
