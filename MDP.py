@@ -1,3 +1,9 @@
+"""
+Name: Matan suliman
+ID: 322982620
+"""
+
+
 from copy import copy, deepcopy
 from typing import * # clearity of code
 from decimal import Decimal, getcontext # precision
@@ -341,7 +347,7 @@ actions_diagonals = {
 
 def Value_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200) -> int:
     
-    PRECISION = int(np.log10(EPSILON) -1)
+    PRECISION = -int(np.log10(EPSILON) +1)
     gamma = mdp.getDiscountFactor()
     rows, cols = mdp.getGrid().getRows(), mdp.getGrid().getCols()
     U_next_value = _zeros(rows, cols)
@@ -353,7 +359,7 @@ def Value_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200) -> int:
     while True:
         i += 1
         mdp.update_utilitys(U_next_value)
-        delta = pow(10, PRECISION)
+        delta = pow(10, -PRECISION -3)
 
         # loop on states
         for state in mdp.getStates():
@@ -385,7 +391,7 @@ def Value_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200) -> int:
 
 def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variation: int =1) -> int:
     
-    PRECISION = int(np.log10(EPSILON) -1)
+    PRECISION = -int(np.log10(EPSILON) +1)
 
     def policy_eval():
 
@@ -402,7 +408,7 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
         while True:
             j += 1
             mdp.update_utilitys(U_next_value)
-            delta = pow(10, PRECISION)
+            delta = pow(10, -PRECISION -1)
 
             # loop on states
             for state in mdp.getStates():
@@ -443,10 +449,10 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
                     maxx_actions.append(action)
 
             # and store it in U_next, update the actions
-            if round(maxx_value, PRECISION) > round(state.getUtility(), PRECISION):
+            if maxx_value == float('-inf') or round(maxx_value, PRECISION) > round(state.getUtility(), PRECISION):
                 state.setActions(maxx_actions)
                 unchanged = False
-        
+            
         return unchanged
 
     # do while
@@ -459,15 +465,15 @@ def Policy_Iteration(mdp: MDP, EPSILON: float, max_iteration: int = 200, variati
         x.append(i)
         y.append(policy_eval())
         unchanged = policy_improvement()
-
         i += 1
+
         if unchanged or i >= max_iteration: break
 
     return i, x, y
 
 def Q_value(mdp: MDP, state: State, action: Action) -> float:
 
-    getcontext().prec = 50
+    
     gamma = _precision(mdp.getDiscountFactor())
     summ = _precision(0)
     for inter_probability, inter_state_next in mdp.TransiotionModel(state, action):
@@ -528,6 +534,11 @@ def plt_save(mdp: MDP, i: int, Q: int):
     utilities_mat = [[mdp.getState((row, col)).getUtility() for col in range(cols)] for row in range(rows)]
     action_mat = [[mdp.getState((row, col)).printActions('s') for col in range(cols)] for row in range(rows)]
 
+    for state in mdp.getStates():
+        row, col = state.getPos()
+        if state.is_goal(): action_mat[row][col] = 'O'
+        if state.is_wall(): action_mat[row][col] = 'X'
+
     # Define the figure with two subplots
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle(f'Name:  Matan Suliman\n\nIterations Until Convergens:  {i}')
@@ -550,11 +561,8 @@ def plt_save(mdp: MDP, i: int, Q: int):
             r, g, b, _ = background_color  # RGBA values
             luminance = 0.299 * r + 0.587 * g + 0.114 * b  # Standard luminance formula
             text_color = "white" if luminance < 0.5 else "black"  # White text on dark background
-            
-            ax1.text(
-                col, row, f"{value:.4f}",
-                ha="center", va="center", color=text_color
-            )
+
+            ax1.text(col, row, f"{value:.4f}", ha="center", va="center", color=text_color, fontsize=5)
 
     # Plot the action policy table
     ax2.set_axis_off()
@@ -571,9 +579,9 @@ def plt_save(mdp: MDP, i: int, Q: int):
         '3.2.2': f'PolicyIteration_variation2',
 
     }
-    file_name = f'input_{val[Q]}_MatanSuliman.jpg'
+
     plt.tight_layout()  # Adjust layout to avoid overlap
-    plt.savefig(file_name, dpi=300)
+    plt.savefig(f'Results\\input_{val[Q]}_MatanSuliman.jpg', dpi= 300)
     plt.close()
 
 def graph_save(mdp: MDP, x: List[int], y: List[int], Q: int):
@@ -582,31 +590,18 @@ def graph_save(mdp: MDP, x: List[int], y: List[int], Q: int):
     plt.plot(x, y)
     plt.xticks(x)  # Add x-tick labels
 
+    for i, val in enumerate(y):
+        plt.text(x[i] + 0.1, y[i], f'{val}', fontsize=9, color='red')
+
     # Save the combined figure
     val = {
         '3.2.1': f'Graph_variation1',
         '3.2.2': f'Graph_variation2'
     }
-    file_name = f'input_PolicyIteration_{val[Q]}_MatanSuliman.jpg'
+    file_name = f'Results\\input_PolicyIteration_{val[Q]}_MatanSuliman.jpg'
     plt.tight_layout()  # Adjust layout to avoid overlap
     plt.savefig(file_name, dpi=300)
     plt.close()
- 
-def create_npz(name: str, r: int):
-    """
-    status: 0 = wall, 1 = free, -1 = goal, -9 = invalid
-    """
-    rewards = [
-        [r, r, r, 1],
-        [r, 0, r, -1],
-        [r, r, r, r]
-    ]
-    status = [
-        [1, 1, 1, -1],
-        [1, 0, 1, -1],
-        [1, 1, 1, 1]
-    ]
-    np.savez(f'{name}.npz', status, rewards)
 
 def handle_input():
     if len(sys.argv) != 3:
@@ -616,13 +611,15 @@ def handle_input():
 
 def load_data_from_npz(npz_file_path: str):
     data = np.load(npz_file_path)
-    return data['arr_0'].tolist(), data['arr_1'].tolist()
+    return data['states'].tolist(), data['rewards'].tolist()
 
 def main():
     npz_file_path, iteration_type = handle_input()
     status_mat, reward_mat = load_data_from_npz(npz_file_path)
 
-    EPSILON = pow(10, -15)
+    getcontext().prec = 50
+    EPSILON = pow(10, -6)
+
     if iteration_type == 'ValueIteration':
         
         mdp = MDP(
@@ -635,7 +632,7 @@ def main():
         i = Value_Iteration(mdp, EPSILON)
         plt_save(mdp, i, Q= '2.1')
         print('done Q2.1')
-
+        
         for gamma_loop in np.linspace(0, 1, 5):
             mdp.init_utilities()
             mdp.setDiscountFactor(gamma_loop)
@@ -659,26 +656,23 @@ def main():
             discount_factor= 0.9,
             p= 0.8
         )
-        
+
         i, x, y = Policy_Iteration(mdp, EPSILON, variation= 1)
         plt_save(mdp, i, Q= '3.1')
         print('done Q3.1')
-
+        
         graph_save(mdp, x, y, Q= '3.2.1')
         print('done Q3.2.1')
-
+        
         mdp.init_utilities()
         mdp.update_actions([actions['Up']])
 
         i, x, y = Policy_Iteration(mdp, EPSILON, variation= 2)
         graph_save(mdp, x, y, Q= '3.2.2')
         print('done Q3.2.2')
-
+        
     else:
         raise ValueError('<ValueIteration / PolicyIteration>')
 
 if __name__ == '__main__':
-    for r in [-0.04, -0.01]:
-        #r *= 10
-        create_npz(f'test{r}', r)
     main()

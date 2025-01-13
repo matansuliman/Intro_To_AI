@@ -1,6 +1,6 @@
-# Matan Suliman - MDP Value and Policy Iteration
+# MDP Value and Policy Iteration
 
-This repository contains an implementation of Markov Decision Process (MDP) including the Value Iteration and Policy Iteration algorithms. The code allows for the definition of states, actions, and a transition model within a grid, and performs Value Iteration or Policy Iteration to compute the optimal policies for an agent.
+Implementation of Markov Decision Process (MDP) including the Value Iteration and Policy Iteration algorithms. The code allows for the definition of states, actions, and a transition model within a grid, and performs Value Iteration or Policy Iteration to compute the optimal policies.
 
 ## Table of Contents
 
@@ -115,6 +115,14 @@ The `transition_model` function defines the probability distribution for the nex
 def transition_model(mdp: MDP, state_curr: State, action: Action) -> Iterable[Tuple[float, State]]:
 ```
 
+### Q_value
+
+The `Q_value` function calculates the expected utility for a given state-action pair. It considers the reward for the current state and the future rewards of the resulting states, weighted by the transition probabilities.
+
+```python
+def Q_value(mdp: MDP, state: State, action: Action) -> float:
+```
+
 
 ## Helper Functions
 
@@ -133,14 +141,6 @@ You can use this code to simulate an agent navigating through a grid environment
 # Example usage
 grid = Grid(5, 5)
 mdp = MDP(grid, transition_model, discount_factor=0.9, p=0.8)
-Value_Iteration(mdp, EPSILON=0.01)
-```
-
-
-## Plots
-
-The `plt_save` function generates and saves a plot of the utility values and the optimal policy derived from Value Iteration or Policy Iteration.
-
-```python
-def plt_save(mdp: MDP, i: int, Q: int):
+iterations = Value_Iteration(mdp, EPSILON=0.01)
+print(mdp.getGrid().print('u'))
 ```
